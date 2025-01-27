@@ -672,16 +672,17 @@ window.addEventListener('load', () => {
     document.body.onpopstate = Wiklo.loadFromSearch
     Wiklo.loadFromSearch()
     fetch('/editable', {method: 'HEAD'}).then(r=>{
+        const newlink = document.querySelector('header nav a#newlink')
+        const editlink = document.querySelector('header nav a#editlink')
+        const deletelink = document.querySelector('header nav a#deletelink')
         if (r.status == 202) {
-            const newlink = document.querySelector('header nav a#newlink')
+            if (!newlink || !editlink || !deletelink) return
             newlink.style.display = 'block'
-            const editlink = document.querySelector('header nav a#editlink')
             editlink.style.display = location.search ? 'block' : 'none'
             editlink.addEventListener('click', (e) => {
                 e.preventDefault()
                 location.href = editlink.href + '?' + Wiklo.PAGEUUID
             })
-            const deletelink = document.querySelector('header nav a#deletelink')
             deletelink.style.display = location.search ? 'block' : 'none'
             deletelink.addEventListener('click', (e) => {
                 e.preventDefault()
@@ -699,6 +700,10 @@ window.addEventListener('load', () => {
                 deletelink.addEventListener('click', deleteFuction)
                 setTimeout(()=>{deletelink.removeEventListener('click', deleteFuction)}, 500)
             })
+        } else {
+            if (newlink) newlink.remove()
+            if (editlink) editlink.remove()
+            if (deletelink) deletelink.remove()
         }
     })
     document.querySelector('#article_search').addEventListener('keydown', (e) => {
