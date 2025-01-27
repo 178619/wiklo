@@ -1,0 +1,40 @@
+:root {
+    --main-color: #000000;
+    --font-serif: RobotoSlab, serif;
+    --font-sans-serif: Roboto, sans-serif;
+    --font-monospace: RobotoMono, monospace;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --text-color: #000000;
+        --date-color: #7F7F7F;
+        --background-color: #FFFFFF;
+        --background-sub-color: #FFFFFF;
+        --header-background-color: #DFDFFF;
+        --header-button-hover-color: #BFBFFF;
+        --link-color: #003FBF;
+        --visited-link-color: #7F00BF;
+        --error-text-color: #BF0000;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text-color: #DFDFDF;
+        --date-color: #7F7F7F;
+        --background-color: #171717;
+        --background-sub-color: #000000;
+        --header-background-color: #3F3F5F;
+        --header-button-hover-color: #3F3F9F;
+        --link-color: #7FBFFF;
+        --visited-link-color: #BF9FFF;
+        --error-text-color: #FF7F7F;
+    }
+}
+
+article {
+    h1.page-title {
+        font-family: var(--font-serif);
+    }
+}

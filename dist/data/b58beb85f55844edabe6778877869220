@@ -1,0 +1,13 @@
+Wiklo is an experimental/hobby project, which is heavily influenced by [[https://www.mediawiki.org/wiki/MediaWiki|MediaWiki]]. <div style="float:left; padding: 4px; margin: 0px 8px;">{{nest|logo.svg|width=144px}}</div>
+
+Wiklo is a [[https://en.wikipedia.org/wiki/Static_site_generator|Static Site Generator]]. Every time you edit a page, it immediately generates a static revision, that you can freely move or backup.
+
+Wiklo is a [[https://en.wikipedia.org/wiki/Single-page_application|Single-page Application]]. You can explore all the articles in a single webpage.
+
+Wiklo uses wiki-style texts to make editing easier, while also supporting HTML tags, styles and scripts.
+
+Wiklo utilizes categories to allow simpler exploration.
+
+Wiklo does not use any external library.
+
+Wiklo does not modify your file data.

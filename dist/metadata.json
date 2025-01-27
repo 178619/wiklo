@@ -1,0 +1,20 @@
+{
+    "b58beb85f55844edabe6778877869220": {
+        "name": "Wiklo",
+        "author": null,
+        "lastModification": 1737977225591,
+        "creation": 1737976469966,
+        "categories": [],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "816d1e2c57fa48708dc7ed06c0d3e932": {
+        "name": "logo.svg",
+        "author": null,
+        "lastModification": 1737976757617,
+        "creation": 1737976757617,
+        "categories": [],
+        "MIMEType": "image/svg+xml",
+        "encrypted": false
+    }
+}

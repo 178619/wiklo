@@ -1,0 +1,137 @@
+<section>
+    <form action="/" method="post">
+        <div>
+            <input id="uuid" name="uuid" type="text" placeholder="UUID (Blank: new page)">
+            <input id="name" name="name" type="text" placeholder="Title">
+    <!--    <input id="author" name="author" type="text" placeholder="Author (Opt)"> -->
+            <input id="categories" name="categories" type="text" placeholder="Categories">
+            <label><input id="iscategory" name="iscategory" type="checkbox">Category</label>
+            <label><input id="isdisambiguation" name="isdisambiguation" type="checkbox">Disambiguation</label>
+            <input id="send" type="submit" value="Send Article">
+            <ol id="categorylist"></ol>
+            <hr>
+            <textarea id="content" name="content" spellcheck="false"></textarea>
+            <hr>
+            <label><input id="file" name="file" type="file"><div class="label-file"></div><input id="resetFile" type="button" value="X"></label>
+        </div>
+    </form>
+    <script>
+        const categories = []
+        const form = document.querySelector('form')
+        form.querySelector('input#file').addEventListener('change', (e) => {
+            form.querySelector('textarea').disabled = !!e.target.files.length
+            form.querySelector('input#send').value = 'Upload File'
+            form.querySelector('input#resetFile').disabled = !e.target.files.length
+            form.querySelector('input#name').placeholder = e.target.files[0].name
+            loadPage()
+        })
+        form.querySelector('input#resetFile').addEventListener('click', (e) => {
+            form.querySelector('input#file').value = null
+            form.querySelector('textarea').disabled = false
+            form.querySelector('input#send').value = 'Send Article'
+            form.querySelector('input#resetFile').disabled = true
+            form.querySelector('input#name').placeholder = 'Title'
+            loadPage()
+        })
+        document.querySelector('form').addEventListener('submit', (e) => {
+            e.preventDefault()
+            let data = new FormData()
+            let uuid = form.querySelector('input#uuid').value
+            let name = form.querySelector('input#name').value
+            const fileInput = form.querySelector('input#file')
+            if (!name && fileInput.files.length) name = fileInput.files[0].name
+            if (!name) return Wiklo.alert('Client Error: Title is not present', 'error')
+            if (uuid) data.append('uuid', uuid)
+            data.append('name', name)
+            if (form.querySelector('input#iscategory').checked) data.append('iscategory', 'true')
+            if (form.querySelector('input#isdisambiguation').checked) data.append('isdisambiguation', 'true')
+            data.append('categories', categories.map(v=>v.uuid).join(';'))
+            if (fileInput.files.length && fileInput.files[0].type) data.append('type', fileInput.files[0].type)
+            else if (!fileInput.files.length) data.append('type', 'text/wkl')
+            let queries = new URLSearchParams(data)
+            fetch('/?'+queries, {
+                method: "PUT",
+                body: fileInput.files.length ? fileInput.files[0] : form.querySelector('textarea').value
+            }).then(response => response.json()).then(r => {
+                if (r.error) return Wiklo.alert('Bad Request: ' + r.description, 'error')
+                if (!r.uuid) return Wiklo.alert('Unknown Error (This is likely to be a server-side issue)', 'error')
+                Wiklo.alert(`Page successfully ${uuid ? 'edited' : 'created'}, Redirecting in a few seconds...`, 'info')
+                setTimeout(()=>{window.location.href = './?' + r.uuid}, 2000)
+            })
+        })
+        const getByteText = (value) => {
+            if (value < 10240) return value + ' Bytes'
+            if (value < 102400) return Math.floor(value / 1024) + '.' + Math.floor(value % 1024 / 1024 * 100) + ' KB'
+            if (value < 1048576) return Math.floor(value / 1024) + '.' + Math.floor(value % 1024 / 1024 * 10) + ' KB'
+            if (value < 104857600) return Math.floor(value / 1048576) + '.' + Math.floor(value % 1048576 / 1048576 * 100) + ' MB'
+            if (value < 1073741824) return Math.floor(value / 1048576) + '.' + Math.floor(value % 1048576 / 1048576 * 10) + ' MB'
+            if (value < 107374182400) return Math.floor(value / 1073741824) + '.' + Math.floor(value % 1073741824 / 1073741824 * 100) + ' GB'
+            if (value < 1099511627776) return Math.floor(value / 1073741824) + '.' + Math.floor(value % 1073741824 / 1073741824 * 10) + ' GB'
+            if (value < 10995116277760) return Math.floor(value / 1073741824) + ' GB'
+            return value
+        }
+        const loadPage = async () => {
+            Wiklo.PAGENAME = form.querySelector('input#name').value || 'PAGENAME_PLACEHOLDER'
+            Wiklo.PAGEUUID = form.querySelector('input#uuid').value || '00112233445566778899aabbccddeeff'
+            const fileInput = form.querySelector('input#file')
+            form.querySelector('input#file + div.label-file').innerHTML = fileInput.files.length ? (
+                'File Selected: ' + fileInput.files[0].name + '<br />' + 'Size: ' + getByteText(fileInput.files[0].size) + '<br />' + 'Type: ' + fileInput.files[0].type
+            ) : 'File Not Selected<br />Click to Select a File'
+            form.querySelector('input#send').value = fileInput.files.length ? 'Upload File' : 'Send Article'
+            const scrollTop = form.querySelector('textarea').scrollTop
+            document.querySelectorAll('article').forEach(v=>{v.remove()})
+            document.querySelector('preview').append(Wiklo.textToPage(!fileInput.files.length ? form.querySelector('textarea').value : '', {
+                name: form.querySelector('input#name').value,
+                creation: form.querySelector('input#uuid').value ? new Date(Wiklo.PAGEINFO && Wiklo.PAGEINFO.creation || 0).toLocaleString() : new Date().toLocaleString(),
+                lastModification: new Date().toLocaleString()
+            }))
+            form.querySelector('textarea').scrollTop = scrollTop
+            document.querySelectorAll('section.included').forEach(v=>{v.onloadedmetadata()})
+        }
+        form.addEventListener('keydown', (e) => {
+            if (e.key == 'Enter') {
+                if (e.target.nodeName.toUpperCase() != 'TEXTAREA') e.preventDefault()
+            }
+        })
+        const reloadCategoryList = () => {
+            form.querySelectorAll('ol#categorylist > li').forEach(v=>{v.remove()})
+            categories.forEach(({uuid, name})=>{
+                const li = document.createElement('li')
+                li.textContent = name
+                li.title = uuid
+                form.querySelector('ol#categorylist').appendChild(li)
+            })
+            form.querySelector('ol#categorylist')
+        }
+        form.querySelector('input#categories').addEventListener('keydown', (e) => {
+            if (e.key == 'Enter') {
+                const value = form.querySelector('input#categories').value
+                const metadata = Wiklo.getMetadataUnsafe()
+                const entries = Object.entries(metadata)
+                const categoryEntry = entries.find(([k,v])=>value==k&&v.categories.includes(true)) || entries.find(([k,v])=>value==v.name&&v.categories.includes(true)) || entries.find(([k,v])=>value.toLocaleLowerCase()==v.name.toLocaleLowerCase()&&v.categories.includes(true)) || null
+                if (!categoryEntry) {
+                    Wiklo.alert('Category '+value+' could not be found.', 'WARN')
+                    return
+                }
+                const [uuid, {name}] = categoryEntry
+                if (categories.find(v=>v.uuid==uuid)) {
+                    categories.splice(categories.findIndex(v=>v.uuid==uuid), 1)
+                    reloadCategoryList()
+                    return
+                }
+                categories.push({uuid, name})
+                reloadCategoryList()
+            }
+        })
+        form.querySelector('input#name').addEventListener('input', loadPage)
+        form.querySelector('input#uuid').addEventListener('input', loadPage)
+        form.querySelector('textarea').addEventListener('input', loadPage)
+        form.querySelector('textarea').addEventListener('click', loadPage)
+        form.querySelector('textarea').disabled = !!form.querySelector('input#file').files.length
+        form.querySelector('input#resetFile').disabled = !form.querySelector('input#file').files.length
+        document.querySelector('#article_search').style.visibility = 'hidden'
+        window.addEventListener('load', loadPage)
+    </script>
+    <hr>
+    <preview></preview>
+</section>
