@@ -1,0 +1,16 @@
+[[Category]] is a special [[page]], and also a property one can have.
+
+Any page can be marked as a category in edit.
+
+When a page is in a category, it will always prioritize pages in the same category, when users search or click a [[link]].
+* Users are more likely to find their desired [[article]] at once.
+* Editing an article becomes easier and simpler.
+* It allows pages to have the same title, without linking to [[disambiguation]] articles.
+
+== List of categories ==
+<code>{{((}}articlelist|category{{))}}</code> produces:
+{{articlelist|category}}
+
+== List of pages in a category ==
+<code>{{((}}articlelist|category=Wiklo{{))}}</code> produces:
+{{articlelist|category=Wiklo}}

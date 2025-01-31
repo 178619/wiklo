@@ -1,0 +1,5 @@
+An [[Article]] in [[Wiklo]] is a [[page]] that contains text for displaying.
+
+Unlike [[File|files]] which are often nested in articles and delivered as is, it is for generating a human-readable page.
+
+Articles can be nested too, but nested articles cannot load yet another article.

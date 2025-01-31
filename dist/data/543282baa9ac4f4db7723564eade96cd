@@ -1,0 +1,8 @@
+[[Page]] is a page in [[Wiklo]]. It is constructed from an object in metadata and a data file. It might be either an [[article]], or a [[file]].
+
+Page names are case insensitive in [[link|links]].
+
+You can use <code>{{((}}Nest{{))}}</code> [[module]] to include a page in another.
+
+<code>{{((}}Nest|logo.png|width=48{{))}}</code> produces:
+{{nest|logo.png|width=48}}

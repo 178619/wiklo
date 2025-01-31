@@ -1,0 +1,16 @@
+Link is a hyperlink in [[Wiklo]].
+
+<code>{{!((}}Wiklo{{!))}}</code> produces:
+[[Wiklo]]
+
+<code>{{!((}}Wiklo|Alt Text{{!))}}</code> produces:
+[[Wiklo|Alt Text]]
+
+<code>{{!((}}Unknown Page|Alt Text{{!))}}</code> produces:
+[[Unknown Page|Alt Text]] (A link that does not exist)
+
+<code>{{!((}}Link{{!))}}</code> produces:
+[[Link]] (Self-link)
+
+<code>{{!((}}http://example.com|example.com{{!))}}</code> produces:
+[[http://example.com|example.com]] (External link)

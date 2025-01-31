@@ -2,9 +2,11 @@
     "b58beb85f55844edabe6778877869220": {
         "name": "Wiklo",
         "author": null,
-        "lastModification": 1737977225591,
+        "lastModification": 1738174261180,
         "creation": 1737976469966,
-        "categories": [],
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
         "MIMEType": "text/wkl",
         "encrypted": false
     },
@@ -15,6 +17,103 @@
         "creation": 1737976757617,
         "categories": [],
         "MIMEType": "image/svg+xml",
+        "encrypted": false
+    },
+    "c6cb4fc4f0054bd6974b30e3ccb05d41": {
+        "name": "logo.png",
+        "author": null,
+        "lastModification": 1738065722980,
+        "creation": 1738065722980,
+        "categories": [],
+        "MIMEType": "image/png",
+        "encrypted": false
+    },
+    "ae87edb9d97e4789a5bc9915adbb45e5": {
+        "name": "Wiklo",
+        "author": null,
+        "lastModification": 1738171408898,
+        "creation": 1738066472350,
+        "categories": [
+            true
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "543282baa9ac4f4db7723564eade96cd": {
+        "name": "Page",
+        "author": null,
+        "lastModification": 1738173260256,
+        "creation": 1738066612120,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "95463a71cdc44885bc243ba2bb386c45": {
+        "name": "Category",
+        "author": null,
+        "lastModification": 1738173460578,
+        "creation": 1738068752077,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "918304d49cfd44cfbc1b4f7043812ab6": {
+        "name": "Disambiguation",
+        "author": null,
+        "lastModification": 1738071788834,
+        "creation": 1738071563295,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "a5f7664bc84a47b19bb429323b1393a0": {
+        "name": "Article",
+        "author": null,
+        "lastModification": 1738173362958,
+        "creation": 1738172282006,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "6b6dda1633fc420db19c4fcd5016647c": {
+        "name": "File",
+        "author": null,
+        "lastModification": 1738172922553,
+        "creation": 1738172699721,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "5a2eb68e196144fab25d1023be1f7704": {
+        "name": "Link",
+        "author": null,
+        "lastModification": 1738174142652,
+        "creation": 1738173880340,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
+        "encrypted": false
+    },
+    "dc0f81eaa0bd49cb9d78ee89f035ab6f": {
+        "name": "Module",
+        "author": null,
+        "lastModification": 1738190687200,
+        "creation": 1738174828425,
+        "categories": [
+            "ae87edb9d97e4789a5bc9915adbb45e5"
+        ],
+        "MIMEType": "text/wkl",
         "encrypted": false
     }
 }

@@ -1,7 +1,7 @@
 <section>
     <form action="/" method="post">
         <div>
-            <input id="uuid" name="uuid" type="text" placeholder="UUID (Blank: new page)">
+            <input id="uuid" name="uuid" type="text" placeholder="New Page" style="display: none;" disabled>
             <input id="name" name="name" type="text" placeholder="Title">
     <!--    <input id="author" name="author" type="text" placeholder="Author (Opt)"> -->
             <input id="categories" name="categories" type="text" placeholder="Categories">
@@ -99,14 +99,17 @@
                 const li = document.createElement('li')
                 li.textContent = name
                 li.title = uuid
+                li.addEventListener('click', ()=>{
+                    categories.splice(categories.findIndex(v=>v.uuid==uuid), 1)
+                    reloadCategoryList()
+                })
                 form.querySelector('ol#categorylist').appendChild(li)
             })
-            form.querySelector('ol#categorylist')
         }
-        form.querySelector('input#categories').addEventListener('keydown', (e) => {
+        form.querySelector('input#categories').addEventListener('keydown', async (e) => {
             if (e.key == 'Enter') {
                 const value = form.querySelector('input#categories').value
-                const metadata = Wiklo.getMetadataUnsafe()
+                const metadata = await Wiklo.getMetadata()
                 const entries = Object.entries(metadata)
                 const categoryEntry = entries.find(([k,v])=>value==k&&v.categories.includes(true)) || entries.find(([k,v])=>value==v.name&&v.categories.includes(true)) || entries.find(([k,v])=>value.toLocaleLowerCase()==v.name.toLocaleLowerCase()&&v.categories.includes(true)) || null
                 if (!categoryEntry) {
@@ -116,15 +119,16 @@
                 const [uuid, {name}] = categoryEntry
                 if (categories.find(v=>v.uuid==uuid)) {
                     categories.splice(categories.findIndex(v=>v.uuid==uuid), 1)
+                    form.querySelector('input#categories').value = ''
                     reloadCategoryList()
                     return
                 }
                 categories.push({uuid, name})
+                form.querySelector('input#categories').value = ''
                 reloadCategoryList()
             }
         })
         form.querySelector('input#name').addEventListener('input', loadPage)
-        form.querySelector('input#uuid').addEventListener('input', loadPage)
         form.querySelector('textarea').addEventListener('input', loadPage)
         form.querySelector('textarea').addEventListener('click', loadPage)
         form.querySelector('textarea').disabled = !!form.querySelector('input#file').files.length

@@ -37,6 +37,24 @@ Wiklo.alert = (v, t='INFO', l=4000) => {
     setTimeout(()=>{if (d) d.style.right = '-16384px'}, l)
     setTimeout(()=>{if (d) d.remove()}, l+2000)
 }
+Wiklo._supportedObjectTypes = [
+    'application/pdf',
+    // 'application/xml',
+    // 'text/xml',
+    // 'application/json',
+    // 'text/json'
+]
+Wiklo._supportedCodeTypes = [
+    'text/html',
+    'text/javascript',
+    'text/css',
+    'text/json',
+    'text/xml',
+    'text/x-python',
+    'application/x-javascript',
+    'application/json',
+    'application/xml'
+]
 Wiklo._super = {
     '0': '⁰',
     '1': '¹',
@@ -101,12 +119,14 @@ Wiklo.moduleHandlers = {
         }
         if (uuid) {
             const metadata = Wiklo.getMetadataUnsafe()
-            if (metadata[uuid].MIMEType.startsWith('image')) {
-                return Wiklo.moduleHandlers['nestimage'](args, kwargs)
-            } else if (metadata[uuid].MIMEType.startsWith('audio')) {
-                return Wiklo.moduleHandlers['nestaudio'](args, kwargs)
-            } else if (metadata[uuid].MIMEType.startsWith('video')) {
-                return Wiklo.moduleHandlers['nestvideo'](args, kwargs)
+            if (metadata[uuid]) {
+                if (metadata[uuid].MIMEType.startsWith('image')) {
+                    return Wiklo.moduleHandlers['nestimage'](args, kwargs)
+                } else if (metadata[uuid].MIMEType.startsWith('audio')) {
+                    return Wiklo.moduleHandlers['nestaudio'](args, kwargs)
+                } else if (metadata[uuid].MIMEType.startsWith('video')) {
+                    return Wiklo.moduleHandlers['nestvideo'](args, kwargs)
+                }
             }
         }
         return '<section class="included" onloadedmetadata="Wiklo.getUUIDPageComponent(this)" uuid="'+uuid+'"></section>'
@@ -115,13 +135,13 @@ Wiklo.moduleHandlers = {
         const metadata = Wiklo.getMetadataUnsafe()
         const sortedby = kwargs.sortedby || 'name'
         const reversed = Wiklo.getTrue(kwargs.reversed)
-        const category = kwargs.category || args.includes('category') || null
-        return '<ol>'+Object.entries(metadata).filter(v=>(category === null||v.categories.includes(category))&&!v.old).sort((a,b)=>{return ((a[1][sortedby] > b[1][sortedby]) - (b[1][sortedby] > a[1][sortedby])) * (reversed ? -1 : 1)}).map(([uuid, {name}])=>{
-            return `<li><a href="./?${uuid}">${name}</a></li>`
+        const category = (kwargs.category && kwargs.category.match(/^[0-9a-f]{32}$/) ? kwargs.category : null) || (kwargs.category ? Wiklo.getPageUUIDUnsafe(decodeURIComponent(kwargs.category), [true]) : null) || kwargs.category || args.includes('category') || null
+        return '<ol>'+Object.entries(metadata).filter(([uuid, {categories, old}])=>(category === null||categories.includes(category))&&!old).sort((a,b)=>{return ((a[1][sortedby] > b[1][sortedby]) - (b[1][sortedby] > a[1][sortedby])) * (reversed ? -1 : 1)}).map(([uuid, {name}])=>{
+            return `<li>[[${uuid}|${name}]]</li>`
         }).join('')+'</ol>'
     },
     'nestimage': (args, kwargs) => {
-        if (!args.length) return `<img src="">`
+        if (!args.length) return '<img src="">'
         let source = null
         let uuid = null
         if (args[0].match(/^[0-9a-f]{32}$/)) source = './data/' + args[0]
@@ -130,28 +150,47 @@ Wiklo.moduleHandlers = {
             uuid = Wiklo.getPageUUIDUnsafe(decodeURIComponent(args[0]), Wiklo.PAGEINFO?.categories || [])
             if (uuid) source = './data/' + uuid
         }
-        return source ? `<img src="${source}" width="${kwargs.width}" height="${kwargs.height}" onerror="Wiklo.retryImage(this, '${uuid || args[0]}')">` : `<img src="">`
+        if (!source) '<img src="">'
+        return `<img src="${source}" width="${kwargs.width}" height="${kwargs.height}" onerror="Wiklo.retryImage(this, '${uuid || args[0]}')">`
     },
     'nestaudio': (args, kwargs) => {
-        if (!args.length) return `<audio src=""></audio>`
-        let source = ''
-        if (args[0].match(/^[0-9a-f]{32}$/)) source = './data/' + args[0]
-        if (args[0].startsWith('http://') || args[0].startsWith('https://')) source = args[0]
-        else {
-            const uuid = Wiklo.getPageUUIDUnsafe(decodeURIComponent(args[0]), Wiklo.PAGEINFO?.categories || [])
-            if (uuid) source = './data/' + uuid
-        }
-        return source ? `<audio src="${source}" controls></audio>` : `<audio src=""></audio>`
+        if (!args.length) return '<audio></audio>'
+        return '<audio controls>' + args.map((v)=>{
+            let source = ''
+            if (v.match(/^[0-9a-f]{32}$/)) source = './data/' + v
+            if (v.startsWith('http://') || v.startsWith('https://')) source = v
+            else {
+                const uuid = Wiklo.getPageUUIDUnsafe(decodeURIComponent(v), Wiklo.PAGEINFO?.categories || [])
+                if (uuid) source = './data/' + uuid
+            }
+            return source ? `<source src=${source}>` : ''
+        }).join('') + '</audio>'
     },
     'nestvideo': (args, kwargs) => {
-        if (!args.length) return `<video src=""></video>`
+        if (!args.length) return '<video></video>'
+        return '<video controls>' + args.map((v)=>{
+            let source = ''
+            if (v.match(/^[0-9a-f]{32}$/)) source = './data/' + v
+            if (v.startsWith('http://') || v.startsWith('https://')) source = v
+            else {
+                const uuid = Wiklo.getPageUUIDUnsafe(decodeURIComponent(v), Wiklo.PAGEINFO?.categories || [])
+                if (uuid) source = './data/' + uuid
+            }
+            return source ? `<source src=${source}>` : ''
+        }).join('') + '</video>'
+    },
+    'nestobject': (args, kwargs) => {
+        if (!args.length) return '<object data="">'
+        let source = null
+        let uuid = null
         if (args[0].match(/^[0-9a-f]{32}$/)) source = './data/' + args[0]
-        if (args[0].startsWith('http://') || args[0].startsWith('https://')) source = args[0]
+        else if (args[0].startsWith('http://') || args[0].startsWith('https://')) source = args[0]
         else {
-            const uuid = Wiklo.getPageUUIDUnsafe(decodeURIComponent(args[0]), Wiklo.PAGEINFO?.categories || [])
+            uuid = Wiklo.getPageUUIDUnsafe(decodeURIComponent(args[0]), Wiklo.PAGEINFO?.categories || [])
             if (uuid) source = './data/' + uuid
         }
-        return source ? `<video src="${source}" width="${kwargs.width}" height="${kwargs.height}" controls></video>` : `<video src=""></video>`
+        if (!source) '<object data="">'
+        return `<object data="${source}" width="${kwargs.width}" height="${kwargs.height}" type="${kwargs.type}"></object>`
     }
 }
 Wiklo.tryHead = (t) => {
@@ -168,7 +207,8 @@ Wiklo.tryHead = (t) => {
         q--
     }
     if (q) return null
-    r.id = t.replace(/(<[\w/].*?>)/g, '').trim()
+    t = t
+    r.id = t.replace(/(<[\w/].*?>)/g, '').replace(/(\[\[.*?\]\]|\{\{.*?\}\})/g, v=>v.slice(2,-2)).trim()
     r.innerHTML = t.trim()
     return r
 }
@@ -414,7 +454,7 @@ Wiklo.tagsHandlerDeprecated = (v) => {
     }
     return v.join('')
 }
-Wiklo.templatesHandler = (v) => {
+Wiklo.modulesHandler = (v) => {
     v = v.split(/(\{\{\{[^\{]*?\}\}\})/g).map(k=>{
         if (!k.startsWith('{{{')) return k
         if (k.includes('|')) return k.slice(3,-3).split('|')[1]
@@ -448,7 +488,7 @@ Wiklo.templatesHandler = (v) => {
     tagList.sort((a,b)=>{return b.tagLevel - a.tagLevel})
     for (let i = 0; i < tagList.length; i += 2) {
         if (tagList[i+1]) {
-            if (tagList[i].type == 'module') v[tagList[i].index] = Wiklo.templateToHTML(v.slice(tagList[i].index+1, tagList[i+1].index).join(''))
+            if (tagList[i].type == 'module') v[tagList[i].index] = Wiklo.moduleToHTML(v.slice(tagList[i].index+1, tagList[i+1].index).join(''))
             if (tagList[i].type == 'link') v[tagList[i].index] = Wiklo.linkToHTML(v.slice(tagList[i].index+1, tagList[i+1].index).join(''))
             for (let j = tagList[i].index+1; j <= tagList[i+1].index; j += 1) v[j] = ''
         } else {
@@ -457,7 +497,7 @@ Wiklo.templatesHandler = (v) => {
     }
     return v.join('')
 }
-Wiklo.templateToHTML = (v) => {
+Wiklo.moduleToHTML = (v) => {
     v = v.split('|').map(k=>k.trim())
     const name = v[0].toLowerCase()
     const args = []
@@ -472,8 +512,8 @@ Wiklo.templateToHTML = (v) => {
         args.push(k.trim())
         return
     })
-    if (Object.keys(Wiklo.moduleHandlers).includes(name)) return Wiklo.templatesHandler(Wiklo.moduleHandlers[name](args, kwargs))
-    return '[Template ' + v[0] + ']'
+    if (Wiklo.moduleHandlers.hasOwnProperty(name)) return Wiklo.modulesHandler(Wiklo.moduleHandlers[name](args, kwargs))
+    return '[Module ' + v[0] + ']'
 }
 Wiklo.linkToHTML = (v) => {
     const metadata = Wiklo.getMetadataUnsafe()
@@ -489,26 +529,29 @@ Wiklo.linkToHTML = (v) => {
         args.push(k.trim())
         return 
     })
-    if (args[0].startsWith('File:')) return '<a href="https://commons.wikimedia.org/wiki/'+args[0]+'" title="'+args[0]+'">'+args[0]+'</a>'
     if (args[0].startsWith('http://') || args[0].startsWith('https://')) return `<a href="${args[0]}" title="${args[0]}">${args[1] || args[0]}</a>`
     const hash = args[0].split('#').slice(1).join('#')
     args[0] = args[0].split('#')[0]
     const entries = Object.entries(metadata)
     const categories = Wiklo.PAGEINFO?.categories || []
-    const article = entries.find(([k,v])=>(args[0]==v.name)&&v.categories.some(t=>categories.includes(t))) || entries.find(([k,v])=>args[0]==v.name&&v.categories.includes(false)) || entries.find(([k,v])=>args[0]==v.name) || entries.find(([k,v])=>args[0].toLocaleLowerCase()==v.name.toLocaleLowerCase()) || null
+    if (kwargs.category) {
+        const category = Wiklo.getPageUUIDUnsafe(kwargs.category)
+        if (category) categories.push(category)
+    }
+    const article = args[0].match(/^[0-9a-f]{32}$/) && entries.find(([k,v])=>(args[0]==k)) ||entries.find(([k,v])=>(args[0]==v.name)&&v.categories.some(t=>categories.includes(t))) || entries.find(([k,v])=>args[0]==v.name&&v.categories.includes(false)) || entries.find(([k,v])=>args[0]==v.name) || entries.find(([k,v])=>args[0].toLocaleLowerCase()==v.name.toLocaleLowerCase()) || null
     return `<a href="./?${article ? article[0] : args[0]}${hash ? ('#'+hash) : ''}" title="${args[0]}"${!article ? ' class="no-article"' : (Wiklo.PAGEUUID == article[0] ? ' class="self-link"' : '')}>${args[1] || (hash ? (args[0] + ' &#xA7; ' + hash) : args[0])}</a>`
 }
 Wiklo.textToHTML = (v) => {
-    return Wiklo.templatesHandler(
+    return Wiklo.modulesHandler(
         Wiklo.tagsHandler(v)
         .replace(/^\n/gs, '')
         .replace(/^=[^\n]*=\s*?\n/gs, (v)=>((Wiklo.tryHead(v.slice(0, -1).trim())?.outerHTML)||v.slice(0, -1))+'\n')
         .replace(/\n=[^\n]*=\s*?\n/gs, (v)=>'\n'+((Wiklo.tryHead(v.slice(1, -1).trim())?.outerHTML)||v.slice(1, -1))+'\n')
-        .replace(/\n(?:\*\*\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(5).trim()+'</li>').join('')+'</ul>\n')
-        .replace(/\n(?:\*\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(4).trim()+'</li>').join('')+'</ul>\n')
-        .replace(/\n(?:\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(3).trim()+'</li>').join('')+'</ul>\n')
-        .replace(/\n(?:\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(2).trim()+'</li>').join('')+'</ul>\n')
-        .replace(/\n(?:\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(1).trim()+'</li>').join('')+'</ul>\n')
+        .replace(/\n(?:\*\*\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(5).trim()+'</li>').join('')+'</ul>')
+        .replace(/\n(?:\*\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(4).trim()+'</li>').join('')+'</ul>')
+        .replace(/\n(?:\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(3).trim()+'</li>').join('')+'</ul>')
+        .replace(/\n(?:\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(2).trim()+'</li>').join('')+'</ul>')
+        .replace(/\n(?:\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(1).trim()+'</li>').join('')+'</ul>')
         .replace(/^:.+?$/gm, (v)=>'<blockquote>'+v.slice(1)+'</blockquote>')
         .replace(/'''.*?'''/g, (v)=>'<b>'+v.slice(3, -3)+'</b>')
         .replace(/''.*?''/g, (v)=>'<i>'+v.slice(2, -2)+'</i>')
@@ -526,8 +569,8 @@ Wiklo.textToPage = (text, pageinfo=null) => {
                 + '<h1 class="page-title">'+(pageinfo.name||'')+'</h1>'
                 + '<div class="page-info">'
                     + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
-                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString()+'</span></div>' : '')
-                    + (pageinfo.lastModification ? '<div>Last Modification: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString()+'</span></div>' : '')
+                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString(undefined, {timeZoneName:'short'})+'</span></div>' : '')
+                    + (pageinfo.lastModification ? '<div>Last Modification: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString(undefined, {timeZoneName:'short'})+'</span></div>' : '')
                 + '</div>'
             + '</div><hr>' ) : ''
         )
@@ -542,28 +585,36 @@ Wiklo.textToPage = (text, pageinfo=null) => {
     })
     return page
 }
+Wiklo.textToPageRaw = (text, pageinfo=null) => {
+    const page = document.createElement('article')
+    page.innerHTML =
+        (
+            pageinfo ? 
+            ( '<div class="page-header">'
+                + '<h1 class="page-title">'+(pageinfo.name||'')+'</h1>'
+                + '<div class="page-info">'
+                    + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
+                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString()+'</span></div>' : '')
+                    + (pageinfo.lastModification ? '<div>Last Modification: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString()+'</span></div>' : '')
+                + '</div>'
+            + '</div><hr>' ) : ''
+        )
+        + text
+    return page
+}
 Wiklo.loadUUIDData = async (uuid) => {
     const metadata = await Wiklo.getMetadata()
-    if (!Object.keys(metadata).includes(uuid)) return null
+    if (!metadata.hasOwnProperty(uuid)) return null
     const data = await fetch('./data/'+uuid)
     return data
 }
 Wiklo.loadUUIDPage = async (uuid, hash=null) => {
     const metadata = await Wiklo.getMetadata()
-    if (!Object.keys(metadata).includes(uuid)) return
+    if (!metadata.hasOwnProperty(uuid)) return
     Wiklo.PAGENAME = metadata[uuid].name
     Wiklo.PAGEUUID = uuid
     document.querySelectorAll('article').forEach(v=>{v.remove()})
-    if (metadata[uuid].MIMEType.startsWith('image')) {
-        document.querySelector('section').append(Wiklo.textToPage('{{nestimage|'+uuid+'}}<hr>This is an image file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
-        document.title = metadata[uuid].name + ' - ' + Wiklo.title
-    } else if (metadata[uuid].MIMEType.startsWith('audio')) {
-        document.querySelector('section').append(Wiklo.textToPage('{{nestaudio|'+uuid+'}}<hr>This is an audio file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
-        document.title = metadata[uuid].name + ' - ' + Wiklo.title
-    } else if (metadata[uuid].MIMEType.startsWith('video')) {
-        document.querySelector('section').append(Wiklo.textToPage('{{nestvideo|'+uuid+'}}<hr>This is a video file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
-        document.title = metadata[uuid].name + ' - ' + Wiklo.title
-    } else {
+    if (metadata[uuid].MIMEType == 'text/wkl') {
         const data = await (await Wiklo.loadUUIDData(uuid)).text() || ''
         if (data.startsWith('#redirect ')) {
             if (data.slice(10).split('#')[0].match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(data.slice(10).split('#')[0], data.slice(10).split('#')[1]).then(()=>{window.history.replaceState(null, null, location.origin + '/?' + Wiklo.PAGEUUID)})
@@ -578,6 +629,29 @@ Wiklo.loadUUIDPage = async (uuid, hash=null) => {
             document.querySelector('section').append(Wiklo.textToPage(data, metadata[uuid]))
             document.title = metadata[uuid].name + ' - ' + Wiklo.title
         }
+    } else if (metadata[uuid].MIMEType.startsWith('image')) {
+        document.querySelector('section').append(Wiklo.textToPage('{{nestimage|'+uuid+'}}<hr>This is an image file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
+    } else if (metadata[uuid].MIMEType.startsWith('audio')) {
+        document.querySelector('section').append(Wiklo.textToPage('{{nestaudio|'+uuid+'}}<hr>This is an audio file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
+    } else if (metadata[uuid].MIMEType.startsWith('video')) {
+        document.querySelector('section').append(Wiklo.textToPage('{{nestvideo|'+uuid+'}}<hr>This is a video file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
+    } else if (Wiklo._supportedObjectTypes.includes(metadata[uuid].MIMEType)) {
+        document.querySelector('section').append(Wiklo.textToPage('{{nestobject|'+uuid+'|type='+metadata[uuid].MIMEType+'|width=100%|height=400}}<hr>This is an object file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
+    } else if (Wiklo._supportedCodeTypes.includes(metadata[uuid].MIMEType)) {
+        const data = await (await Wiklo.loadUUIDData(uuid)).text() || ''
+        document.querySelector('section').append(Wiklo.textToPageRaw('<code>' + data.replaceAll('<', '&#x3C;').replaceAll('>', '&#x3E;') + '</code><hr>This is a text file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
+    } else if (metadata[uuid].MIMEType.startsWith('text')) {
+        const data = await (await Wiklo.loadUUIDData(uuid)).text() || ''
+        document.querySelector('section').append(Wiklo.textToPageRaw(data.replaceAll('<', '&#x3C;').replaceAll('>', '&#x3E;') + '<hr>This is a text file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
+    } else {
+        document.querySelector('section').append(Wiklo.textToPage('This is an unknown file uploaded to this website. ('+metadata[uuid].MIMEType+') <a href="./data/'+uuid+'" download="'+metadata[uuid].name+'">Download</a>', metadata[uuid]))
+        document.title = metadata[uuid].name + ' - ' + Wiklo.title
     }
     document.querySelectorAll('section.included').forEach(v=>{v.onloadedmetadata()})
     document.querySelectorAll('article script').forEach(v=>{eval(v.textContent)})
@@ -591,14 +665,14 @@ Wiklo._forceScroll = (t) => {
 Wiklo.getUUIDPageComponent = async (section) => {
     const metadata = await Wiklo.getMetadata()
     const uuid = section.getAttribute('uuid')
-    if (!Object.keys(metadata).includes(uuid)) return section.innerHTML = '<span class="module-error">Error: Page Not Found</span>'
+    if (!metadata.hasOwnProperty(uuid)) return section.innerHTML = '<span class="module-error">Error: Page Not Found</span>'
     if (metadata[uuid].MIMEType.startsWith('image')) {
         section.innerHTML = Wiklo.textToHTML('{{nest|'+uuid+'}}')
     } else if (metadata[uuid].MIMEType.startsWith('audio')) {
         section.innerHTML = Wiklo.textToHTML('{{nest|'+uuid+'}}')
     } else if (metadata[uuid].MIMEType.startsWith('video')) {
         section.innerHTML = Wiklo.textToHTML('{{nest|'+uuid+'}}')
-    } else {
+    } else if (metadata[uuid].MIMEType.startsWith('text')) {
         const data = await (await Wiklo.loadUUIDData(uuid)).text() || ''
         if (data.startsWith('#redirect ')) {
             if (data.slice(10).match(/^[0-9a-f]{32}$/)) return await Wiklo.getUUIDPageComponent(data.slice(10), section)
@@ -606,8 +680,10 @@ Wiklo.getUUIDPageComponent = async (section) => {
         } else {
             section.innerHTML = Wiklo.textToHTML(data)
         }
+    } else {
+        section.innerHTML = Wiklo.textToHTML('{{nestobject|'+uuid+'}}')
     }
-    document.querySelectorAll('article script').forEach(v=>{eval(v.textContent)})
+    section.querySelectorAll('article script').forEach(v=>{eval(v.textContent)})
 }
 Wiklo.getPageUUID = async (name, categories=[]) => {
     const metadata = await Wiklo.getMetadata()
@@ -627,12 +703,12 @@ Wiklo.loadPageFromName = async (name, categories=[], hash) => {
     Wiklo.alert(`Page '${name}' could not be found.`, 'WARN')
 }
 Wiklo.loadHome = async () => {
+    Wiklo.PAGENAME = ''
+    Wiklo.PAGEUUID = ''
     await Wiklo.getMetadata()
     document.querySelectorAll('article').forEach(v=>{v.remove()})
     document.querySelector('section').append(Wiklo.textToPage(Wiklo.home))
     document.title = Wiklo.title
-    Wiklo.PAGENAME = ''
-    Wiklo.PAGEUUID = ''
 }
 Wiklo.loadFromSearch = () => {
     if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = location.search ? 'block' : 'none'
@@ -647,7 +723,14 @@ Wiklo.loadFromSearch = () => {
                 document.querySelector('form input#isdisambiguation').checked = metadata[uuid].categories.includes(false)
                 if (metadata[uuid].MIMEType.startsWith('text')) Wiklo.loadUUIDData(uuid).then(data=>data.text()).then((data)=>{
                     document.querySelector('form textarea').value = data
+                    // ----
+                    loadPage()
                 })
+                metadata[uuid].categories.forEach((v)=>{
+                    const {name} = metadata[v]
+                    categories.push({uuid: v, name})
+                })
+                reloadCategoryList()
             })
         }
         return
@@ -659,7 +742,10 @@ Wiklo.loadFromSearch = () => {
 window.addEventListener('load', () => {
     Wiklo.getMetadata()
     document.querySelector('section').addEventListener('click', (e) => {
-        if (e.target.nodeName == 'A' && e.target.origin == location.origin && e.target.search) {
+        if (e.target.nodeName == 'A' && location.pathname == '/edit') {
+            e.preventDefault()
+            return
+        } else if (e.target.nodeName == 'A' && e.target.origin == location.origin && e.target.search) {
             e.preventDefault()
             if (e.target.classList.value.includes('self-link')) return
             if (e.target.classList.value.includes('no-article')) return Wiklo.alert(`Page '${decodeURIComponent(e.target.search.slice(1))}' does not exist.`, 'WARN')

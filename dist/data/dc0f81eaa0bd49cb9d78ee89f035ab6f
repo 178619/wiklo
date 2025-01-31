@@ -1,0 +1,8 @@
+A [[Module]] is an automation tool in [[Wiklo]].
+
+Modules are written in JavaScript and can be defined in <code>/dist/static/custom.js</code>.
+
+For example, <code>{{((}}nest|logo.png|width=48{{))}}</code> will result in <code>Wiklo.moduleHandlers['nest'](['logo.png'], {'width':48})</code>.
+
+<code>{{((}}nest|logo.png|width=48{{))}}</code> produces:
+{{nest|logo.png|width=48}}

@@ -484,6 +484,7 @@ form {
         background-color: var(--background-sub-color);
         margin: 2px;
         border-radius: 4px;
+        cursor: pointer;
     }
 }
 

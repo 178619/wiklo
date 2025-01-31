@@ -146,7 +146,7 @@ class Server(BaseHTTPRequestHandler):
             newData['categories'].append(True)
         if params.get('isdisambiguation') == 'true':
             newData['categories'].append(False)
-        newData['MIMEType'] = (params.get('type') or self.headers.get('content-type') or 'text/wkl').split(';')[0]
+        newData['MIMEType'] = (params.get('type') or self.headers.get('content-type') or 'application/octet-stream').split(';')[0]
         newData['encrypted'] = False
         uid = params.get('uuid') or uuid.uuid4().hex
         try:
