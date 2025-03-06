@@ -560,6 +560,7 @@ Wiklo.textToHTML = (v) => {
         .replace(/\n<!--.*?-->\n/gs, (v)=>v.slice(1))
     )
 }
+Wiklo.timeFormat = {timeZoneName:'short', hour12: false}
 Wiklo.textToPage = (text, pageinfo=null) => {
     const page = document.createElement('article')
     page.innerHTML =
@@ -569,8 +570,8 @@ Wiklo.textToPage = (text, pageinfo=null) => {
                 + '<h1 class="page-title">'+(pageinfo.name||'')+'</h1>'
                 + '<div class="page-info">'
                     + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
-                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString(undefined, {timeZoneName:'short'})+'</span></div>' : '')
-                    + (pageinfo.lastModification ? '<div>Last Modification: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString(undefined, {timeZoneName:'short'})+'</span></div>' : '')
+                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
+                    + (pageinfo.lastModification ? '<div>Last Edit: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
                 + '</div>'
             + '</div><hr>' ) : ''
         )
