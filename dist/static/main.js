@@ -618,8 +618,8 @@ Wiklo.loadUUIDPage = async (uuid, hash=null) => {
     if (metadata[uuid].MIMEType == 'text/wkl') {
         const data = await (await Wiklo.loadUUIDData(uuid)).text() || ''
         if (data.startsWith('#redirect ')) {
-            if (data.slice(10).split('#')[0].match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(data.slice(10).split('#')[0], data.slice(10).split('#')[1]).then(()=>{window.history.replaceState(null, null, location.origin + '/?' + Wiklo.PAGEUUID)})
-            else Wiklo.loadPageFromName(data.slice(10).split('#')[0], Wiklo.PAGEINFO?.categories || [], data.slice(10).split('#')[1]).then(()=>{window.history.replaceState(null, null, location.origin + '/?' + Wiklo.PAGEUUID)})
+            if (data.slice(10).split('#')[0].match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(data.slice(10).split('#')[0], data.slice(10).split('#')[1]).then(()=>{window.history.replaceState(null, null, './?' + Wiklo.PAGEUUID)})
+            else Wiklo.loadPageFromName(data.slice(10).split('#')[0], Wiklo.PAGEINFO?.categories || [], data.slice(10).split('#')[1]).then(()=>{window.history.replaceState(null, null, './?' + Wiklo.PAGEUUID)})
         } else {
             if (metadata[uuid].encrypted) {
                 let code = null
@@ -750,8 +750,8 @@ window.addEventListener('load', () => {
             e.preventDefault()
             if (e.target.classList.value.includes('self-link')) return
             if (e.target.classList.value.includes('no-article')) return Wiklo.alert(`Page '${decodeURIComponent(e.target.search.slice(1))}' does not exist.`, 'WARN')
-            if (e.target.search.match(/^\?[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(decodeURIComponent(e.target.search.slice(1)), e.target.hash).then(()=>{window.history.pushState(null, null, location.origin + '/?' + Wiklo.PAGEUUID + e.target.hash)})
-            else Wiklo.loadPageFromName(decodeURIComponent(e.target.search.slice(1)), Wiklo.PAGEINFO?.categories || [], e.target.hash).then(()=>{window.history.pushState(null, null, location.origin + '/?' + Wiklo.PAGEUUID + e.target.hash)})
+            if (e.target.search.match(/^\?[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(decodeURIComponent(e.target.search.slice(1)), e.target.hash).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID + e.target.hash)})
+            else Wiklo.loadPageFromName(decodeURIComponent(e.target.search.slice(1)), Wiklo.PAGEINFO?.categories || [], e.target.hash).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID + e.target.hash)})
             if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = 'block'
             if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = 'block'        
         }
@@ -800,13 +800,13 @@ window.addEventListener('load', () => {
             //     return
             // }
             if (e.target.value.match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(e.target.value).then(()=>{
-                window.history.pushState(null, null, location.origin + '/?' + Wiklo.PAGEUUID)
+                window.history.pushState(null, null, './?' + Wiklo.PAGEUUID)
                 if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = 'block'
                 if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = 'block'
             })
             else Wiklo.loadPageFromName(decodeURIComponent(e.target.value), Wiklo.PAGEINFO?.categories || []).then((k)=>{
                 if (!k) return
-                window.history.pushState(null, null, location.origin + '/?' + Wiklo.PAGEUUID)
+                window.history.pushState(null, null, './?' + Wiklo.PAGEUUID)
                 if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = 'block'
                 if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = 'block'
             })
@@ -821,7 +821,7 @@ window.addEventListener('load', () => {
             const li = document.createElement('li')
             li.textContent = v.name
             li.addEventListener('click', ()=>{
-                Wiklo.loadUUIDPage(k).then(()=>{window.history.pushState(null, null, location.origin + '/?' + k)})
+                Wiklo.loadUUIDPage(k).then(()=>{window.history.pushState(null, null, './?' + k)})
             })
             document.getElementById('article_search_list').appendChild(li)
         })

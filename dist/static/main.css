@@ -9,6 +9,7 @@
     --background-sub-color: #000000;
     --header-background-color: #3F3F5F;
     --header-button-hover-color: #3F3F9F;
+    --layer-color: rgba(127,127,127,0.25);
 }
 
 @media (prefers-color-scheme: light) {
@@ -135,13 +136,13 @@ header nav {
 }
 
 .header-button:hover {
-    background: rgba(127,127,127,0.25);
+    background: var(--layer-color);
     /* border-top: 5px solid var(--header-background-color);
     border-bottom: 5px solid var(--header-button-hover-color); */
 }
 
 .header-button.disabled:hover {
-    background: rgba(127,127,127,0.25);
+    background: var(--layer-color);
     /* border-top: 5px solid var(--header-background-color);
     border-bottom: 5px solid silver; */
 }
@@ -151,7 +152,7 @@ nav #newlink, nav #editlink, nav #deletelink {
 }
 
 header input#article_search {
-    background: rgba(127,127,127,0.25);
+    background: var(--layer-color);
     height: 18px;
     line-height: 18px;
     font-size: 18px;
@@ -213,7 +214,7 @@ header #article_search_list > li {
 }
 
 header #article_search_list > li:hover {
-    background: rgba(127,127,127,0.25);
+    background: var(--layer-color);
 }
 
 header #article_search_list > li::marker {
