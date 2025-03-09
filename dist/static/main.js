@@ -621,12 +621,12 @@ Wiklo.loadUUIDPage = async (uuid, hash=null) => {
             if (data.slice(10).split('#')[0].match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(data.slice(10).split('#')[0], data.slice(10).split('#')[1]).then(()=>{
                 window.history.replaceState(null, null, './?' + Wiklo.PAGEUUID)
                 document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title
-                Wiklo.alert(`Redirected to '${Wiklo.PAGENAME}'.`)
+                Wiklo.alert(`Redirected from '${metadata[uuid].name}'.`)
             })
             else Wiklo.loadPageFromName(data.slice(10).split('#')[0], Wiklo.PAGEINFO?.categories || [], data.slice(10).split('#')[1]).then(()=>{
                 window.history.replaceState(null, null, './?' + Wiklo.PAGEUUID)
                 document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title
-                Wiklo.alert(`Redirected to '${Wiklo.PAGENAME}'.`)
+                Wiklo.alert(`Redirected from '${metadata[uuid].name}'.`)
             })
         } else {
             if (metadata[uuid].encrypted) {
