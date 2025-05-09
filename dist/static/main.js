@@ -148,7 +148,7 @@ Wiklo.moduleHandlers = {
         const sortedby = kwargs.sortedby || 'name'
         const reversed = Wiklo.getTrue(kwargs.reversed)
         const category = (kwargs.category && kwargs.category.match(/^[0-9a-f]{32}$/) ? kwargs.category : null) || (kwargs.category ? Wiklo.getPageUUIDUnsafe(decodeURIComponent(kwargs.category), [true]) : null) || kwargs.category || args.includes('category') || null
-        return '<ol>'+Object.entries(metadata).filter(([uuid, {categories, old}])=>(category === null||categories.includes(category))&&!old).sort((a,b)=>{return ((a[1][sortedby] > b[1][sortedby]) - (b[1][sortedby] > a[1][sortedby])) * (reversed ? -1 : 1)}).map(([uuid, {name}])=>{
+        return '<ol>'+Object.entries(metadata).filter(([uuid, {categories, revised}])=>(category === null||categories.includes(category))&&!revised).sort((a,b)=>{return ((a[1][sortedby] > b[1][sortedby]) - (b[1][sortedby] > a[1][sortedby])) * (reversed ? -1 : 1)}).map(([uuid, {name}])=>{
             return `<li>[[${uuid}|${name}|title=${name}]]</li>`
         }).join('')+'</ol>'
     },
@@ -544,7 +544,7 @@ Wiklo.linkToHTML = (v) => {
     if (args[0].startsWith('http://') || args[0].startsWith('https://')) return `<a href="${args[0]}" title="${args[0]}">${args[1] || args[0]}</a>`
     const hash = args[0].split('#').slice(1).join('#')
     args[0] = args[0].split('#')[0]
-    const entries = Object.entries(metadata)
+    const entries = Object.entries(metadata).filter(([k,v])=>!v.revised)
     const categories = Wiklo.PAGEINFO?.categories || []
     if (kwargs.category) {
         const category = Wiklo.getPageUUIDUnsafe(kwargs.category)
@@ -582,7 +582,7 @@ Wiklo.textToPage = (text, pageinfo=null) => {
                 + '<h1 class="page-title">'+(pageinfo.name||'')+'</h1>'
                 + '<div class="page-info">'
                     + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
-                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
+                    // + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
                     + (pageinfo.lastModification ? '<div>Last Edit: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
                 + '</div>'
             + '</div><hr>' ) : ''
@@ -607,7 +607,7 @@ Wiklo.textToPageRaw = (text, pageinfo=null) => {
                 + '<h1 class="page-title">'+(pageinfo.name||'')+'</h1>'
                 + '<div class="page-info">'
                     + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
-                    + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString()+'</span></div>' : '')
+                    // + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString()+'</span></div>' : '')
                     + (pageinfo.lastModification ? '<div>Last Modification: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString()+'</span></div>' : '')
                 + '</div>'
             + '</div><hr>' ) : ''
@@ -700,13 +700,13 @@ Wiklo.getUUIDPageComponent = async (section) => {
 }
 Wiklo.getPageUUID = async (name, categories=[]) => {
     const metadata = await Wiklo.getMetadata()
-    const entries = Object.entries(metadata)
+    const entries = Object.entries(metadata).filter(([k,v])=>!v.revised)
     const [uuid] = entries.find(([k,v])=>name.toLocaleLowerCase()==v.name.toLocaleLowerCase()&&v.categories.some(t=>categories.includes(t))) || entries.find(([k,v])=>name.toLocaleLowerCase()==v.name.toLocaleLowerCase()&&v.categories.includes(false)) || entries.find(([k,v])=>name==v.name) || entries.find(([k,v])=>name.toLocaleLowerCase()==v.name.toLocaleLowerCase()) || [null]
     return uuid
 }
 Wiklo.getPageUUIDUnsafe = (name, categories=[]) => {
     const metadata = Wiklo.getMetadataUnsafe()
-    const entries = Object.entries(metadata)
+    const entries = Object.entries(metadata).filter(([k,v])=>!v.revised)
     const [uuid] = entries.find(([k,v])=>name.toLocaleLowerCase()==v.name.toLocaleLowerCase()&&v.categories.some(t=>categories.includes(t))) || entries.find(([k,v])=>name.toLocaleLowerCase()==v.name.toLocaleLowerCase()&&v.categories.includes(false)) || entries.find(([k,v])=>name==v.name) || entries.find(([k,v])=>name.toLocaleLowerCase()==v.name.toLocaleLowerCase()) || [null]
     return uuid
 }
@@ -727,7 +727,7 @@ Wiklo.loadArticleList = async (key) => {
     Wiklo.PAGENAME = 'Search: ' + key
     Wiklo.PAGEUUID = key
     const metadata = await Wiklo.getMetadata()
-    const newlist = Object.entries(metadata).filter(([uuid, {name, old}])=>(!old && name.toLocaleLowerCase().includes(key.toLocaleLowerCase()))).sort((a,b)=>{return ((a[1].name > b[1].name) - (b[1].name > a[1].name))})
+    const newlist = Object.entries(metadata).filter(([uuid, {name, revised}])=>(!revised && name.toLocaleLowerCase().includes(key.toLocaleLowerCase()))).sort((a,b)=>{return ((a[1].name > b[1].name) - (b[1].name > a[1].name))})
     document.querySelectorAll('article').forEach(v=>{v.remove()})
     document.querySelector('section').append(Wiklo.textToPage(
         newlist.length ? '<ol>'+newlist.map(([uuid, {name}])=>{
@@ -764,12 +764,56 @@ Wiklo.loadFromSearch = () => {
     else if (location.search) Wiklo.loadPageFromName(decodeURIComponent(location.search.slice(1)), [], location.hash).then(()=>{document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
     else Wiklo.loadHome()
 }
+Wiklo.popup = (v) => {
+    if (!v) v = document.createElement('div')
+    const bg = document.createElement('div')
+    bg.classList.add('wiklo-popup-layer')
+    bg.addEventListener('click', (e)=>{
+        if (e.target == bg) bg.remove()
+    })
+    const d = document.createElement('div')
+    d.classList.add('wiklo-popup-container')
+    d.appendChild(v)
+    bg.appendChild(d)
+    document.body.appendChild(bg)
+    return bg
+}
+Wiklo.popupVersionHistory = async (uuid=Wiklo.PAGEUUID) => {
+    const info = (await Wiklo.getMetadata())[uuid]
+    if (!info) {
+        const v = document.createElement('div')
+        v.textContent = 'This page does not support history view.'
+        return Wiklo.popup(v)
+    }
+    const v = document.createElement('ol')
+    v.classList.add('wiklo-page-history')
+    v.reversed = true
+    const crev = document.createElement('li')
+    crev.classList.add('current')
+    crev.textContent = new Date(info.lastModification).toLocaleString(undefined, Wiklo.timeFormat) + (' | ' + info.name) + (info.author ? (' | ' + info.author) : '')
+    v.appendChild(crev)
+    if (info.revisions && info.revisions.length) info.revisions.toReversed().forEach((uid)=>{
+        const uinfo = Wiklo.getMetadataUnsafe()[uid]
+        const rev = document.createElement('li')
+        rev.textContent = new Date(uinfo.lastModification).toLocaleString(undefined, Wiklo.timeFormat) + (' | ' + uinfo.name) + (uinfo.author ? (' | ' + uinfo.author) : '')
+        rev.addEventListener('click', ()=>{
+            Wiklo.loadUUIDPage(uid).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID); updateButtons(); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
+            document.querySelectorAll('.wiklo-popup-layer').forEach(v=>{v.remove()})
+        })
+        v.appendChild(rev)
+    })
+    return Wiklo.popup(v)
+}
 const updateButtons = (r=Wiklo.editable) => {
     if (Wiklo.editable === undefined) Wiklo.editable = r
     const newlink = document.querySelector('header nav a#newlink')
     const editlink = document.querySelector('header nav a#editlink')
     const deletelink = document.querySelector('header nav a#deletelink')
     const versionlink = document.querySelector('header nav a#versionlink')
+    versionlink.onclick = (e) => {
+        e.preventDefault()
+        Wiklo.popupVersionHistory()
+    }
     if (r || Wiklo.editable) {
         if (!newlink || !editlink || !deletelink) return
         editable = location.search && location.search.match(/^\?[0-9a-f]{32}$/)
@@ -821,10 +865,6 @@ window.addEventListener('load', () => {
     Wiklo.loadFromSearch()
     document.querySelector('#article_search').addEventListener('keydown', (e) => {
         if (e.key == 'Enter') {
-            // if (document.querySelector('#article_search_list > li')) {
-            //     document.querySelector('#article_search_list > li').click()
-            //     return
-            // }
             if (e.target.value.match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(e.target.value).then(()=>{
                 window.history.pushState(null, null, './?' + Wiklo.PAGEUUID)
                 document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title
@@ -836,14 +876,13 @@ window.addEventListener('load', () => {
                 document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title
                 updateButtons()
             })
-            // else return Wiklo.alert(`Page '${e.target.value}' does not exist.`, 'WARN')
         }
     })
     document.querySelector('#article_search').addEventListener('input', (e) => {
         if (!e.target.value) return document.querySelectorAll('#article_search_list > li').forEach(v=>{v.remove()})
         const metadata = Wiklo.getMetadataUnsafe()
         document.querySelectorAll('#article_search_list > li').forEach(v=>{v.remove()})
-        Object.entries(metadata).filter(([k,v])=>v.name.toLocaleLowerCase().startsWith(e.target.value.toLocaleLowerCase().trim())).sort((a,b)=>a[1].name.length-b[1].name.length-a[1]).slice(0, 10).forEach(([k,v])=>{
+        Object.entries(metadata).filter(([k,v])=>!v.revised&&v.name.toLocaleLowerCase().startsWith(e.target.value.toLocaleLowerCase().trim())).sort((a,b)=>a[1].name.length-b[1].name.length-a[1]).slice(0, 10).forEach(([k,v])=>{
             const li = document.createElement('li')
             li.textContent = v.name
             li.addEventListener('click', ()=>{

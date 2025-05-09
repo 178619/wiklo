@@ -40,6 +40,9 @@ while not config.get('port') or type(config.get('port')) != int:
     del port
     break
 
+if not config.get('dir'):
+    config['dir'] = 'dist'
+
 __WIKLO_DEBUG__ = config.get('debug', False)
 
 with open('./config.json', 'wb') as file:
@@ -47,11 +50,11 @@ with open('./config.json', 'wb') as file:
 
 print('config loaded.')
 
-if not os.path.isdir('dist/data'):
-    os.mkdir('dist/data')
+if not os.path.isdir(config['dir']+'/data'):
+    os.mkdir(config['dir']+'/data')
 
 try:
-    with open('./dist/static/auto.js', 'wb') as file:
+    with open(f'./{config['dir']}/static/auto.js', 'wb') as file:
         file.write(('''// Generated automatically. Do not modify manually.
 (()=>{
 Wiklo.title = `''' + config['name'].replace('`', '\\`') + '''`
@@ -60,11 +63,11 @@ except:
     pass
 
 try:
-    with open('./dist/metadata.json', 'rb') as file:
+    with open(f'./{config['dir']}/metadata.json', 'rb') as file:
         metadata = json.load(file)
 except FileNotFoundError:
     metadata = {}
-    with open('./dist/metadata.json', 'wb') as file:
+    with open(f'./{config['dir']}/metadata.json', 'wb') as file:
         file.write(json.dumps(metadata, ensure_ascii=False, indent=4).encode('utf-8'))
 
 try:
@@ -79,12 +82,8 @@ base = base.replace('<!--WIKLO.NAME-->', config['name']).replace('<!--WIKLO.DESC
 
 
 homepage = base.replace('<!--WIKLO.CONTENTS-->', '<section></section>')
-with open('./dist/index.html', 'wb') as file:
+with open(f'./{config['dir']}/index.html', 'wb') as file:
     file.write(homepage.encode('utf-8'))
-
-versionpage = base.replace('<!--WIKLO.CONTENTS-->', '<section></section>')
-with open('./dist/version.html', 'wb') as file:
-    file.write(versionpage.encode('utf-8'))
 
 try:
     with open('./editor.html', 'r', encoding='utf-8') as file:
@@ -123,8 +122,8 @@ class Server(BaseHTTPRequestHandler):
             self.sendText(editpage, 'text/html')
             return
         try:
-            if path.startswith('/dist/'): path = path[5:]
-            path = 'dist' + path
+            if path.startswith(f'/{config['dir']}/'): path = path[(len(config['dir'])+1):]
+            path = config['dir'] + path
             if path.endswith('/'): path += 'index.html'
             with open(path, 'rb') as file:
                 self.sendFile(file, mimetypes.guess_type(path.split('/')[-1])[0])
@@ -134,9 +133,13 @@ class Server(BaseHTTPRequestHandler):
     def do_PUT(self):
         params = dict(parse.parse_qsl(parse.urlsplit(self.path).query))
         newData = {}
-        if params.get('uuid') and params.get('uuid') not in metadata.keys():
-            self.sendText('{"error": "UUID_NOT_FOUND", "description": "UUID does not match any article"}', 'application/json', 400)
-            return
+        if params.get('uuid'):
+            if params.get('uuid') not in metadata.keys():
+                self.sendText('{"error": "UUID_NOT_FOUND", "description": "UUID does not match any article"}', 'application/json', 400)
+                return
+            if metadata[params['uuid']].get('revised'):
+                self.sendText('{"error": "REVISED", "description": "Edits must be based on the latest revision"}', 'application/json', 400)
+                return
         if not params.get('name'):
             self.sendText('{"error": "MISSING_NAME", "description": "Name is a required field"}', 'application/json', 400)
             return
@@ -164,12 +167,19 @@ class Server(BaseHTTPRequestHandler):
             newData['categories'].append(False)
         newData['MIMEType'] = (params.get('type') or self.headers.get('content-type') or 'application/octet-stream').split(';')[0]
         newData['encrypted'] = False
-        uid = params.get('uuid') or uuid.uuid4().hex
+        uid = uuid.uuid4().hex
+        if params.get('uuid'):
+            metadata[params.get('uuid')]['revised'] = True
+            if metadata[params.get('uuid')].get('revisions'):
+                newData['revisions'] = metadata[params.get('uuid')].get('revisions', []) + [params.get('uuid')]
+                del metadata[params.get('uuid')]['revisions']
+            else:
+                newData['revisions'] = [params.get('uuid')]
         try:
-            with open('./dist/data/'+uid, 'wb') as file:
+            with open(f'./{config['dir']}/data/'+uid, 'wb') as file:
                 file.write(data)
             metadata[uid] = newData
-            with open('./dist/metadata.json', 'wb') as file:
+            with open(f'./{config['dir']}/metadata.json', 'wb') as file:
                 file.write(json.dumps(metadata, ensure_ascii=False, indent=4).encode('utf-8'))
             self.sendText('{"uuid": "'+uid+'"}', 'application/json', 201)
             return
@@ -191,9 +201,9 @@ class Server(BaseHTTPRequestHandler):
         if len(path) != 32: return self.send_error(400)
         if '.' in path: return self.send_error(400)
         try:
-            os.remove('./dist/data/'+path)
-            del metadata[path]
-            with open('./dist/metadata.json', 'wb') as file:
+            # os.remove(f'./{config['dir']}/data/'+path)
+            metadata[path]['revised'] = True
+            with open(f'./{config['dir']}/metadata.json', 'wb') as file:
                 file.write(json.dumps(metadata, ensure_ascii=False, indent=4).encode('utf-8'))
             self.send_response(204)
             self.end_headers()

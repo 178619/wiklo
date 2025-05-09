@@ -489,6 +489,55 @@ form {
     }
 }
 
+.wiklo-popup-layer {
+    background-color: var(--layer-color);
+    margin: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 500;
+
+    .wiklo-popup-container {
+        background: var(--background-color);
+        color: var(--text-color);
+        transition: opacity 256ms ease-in-out;
+        margin: auto;
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: max-content;
+        height: max-content;
+        max-height: 75%;
+        padding: 8px;
+        border-radius: 4px;
+        box-shadow: 0px 0px 8px 4px var(--text-color);
+    }
+}
+
+ol.wiklo-page-history {
+    font-family: var(--font-monospace);
+    padding-right: 16px;
+    li {
+        color: var(--date-color);
+        cursor: pointer;
+    }
+    li.current {
+        color: var(--text-color);
+        cursor: inherit;
+    }
+    li:hover {
+        color: var(--text-color);
+        font-weight: bold;
+    }
+    li.current:hover {
+        font-weight: inherit;
+    }
+}
+
 /*
     PRINT
 */

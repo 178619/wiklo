@@ -3,7 +3,7 @@
         <div>
             <input id="uuid" name="uuid" type="text" placeholder="New Page" style="display: none;" disabled>
             <input id="name" name="name" type="text" placeholder="Title">
-    <!--    <input id="author" name="author" type="text" placeholder="Author (Opt)"> -->
+            <input id="author" name="author" type="text" placeholder="Author">
             <input id="categories" name="categories" type="text" placeholder="Categories">
             <label><input id="iscategory" name="iscategory" type="checkbox">Category</label>
             <label><input id="isdisambiguation" name="isdisambiguation" type="checkbox">Disambiguation</label>
@@ -38,6 +38,7 @@
             let data = new FormData()
             let uuid = form.querySelector('input#uuid').value
             let name = form.querySelector('input#name').value
+            let author = form.querySelector('input#author').value
             const fileInput = form.querySelector('input#file')
             if (!name && fileInput.files.length) name = fileInput.files[0].name
             if (!name) return Wiklo.alert('Client Error: Title is not present', 'error')
@@ -48,6 +49,7 @@
             data.append('categories', categories.map(v=>v.uuid).join(';'))
             if (fileInput.files.length && fileInput.files[0].type) data.append('type', fileInput.files[0].type)
             else if (!fileInput.files.length) data.append('type', 'text/wkl')
+            if (author && author.length) data.append('author', author)
             let queries = new URLSearchParams(data)
             fetch('/?'+queries, {
                 method: "PUT",
