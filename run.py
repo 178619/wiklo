@@ -52,10 +52,10 @@ if not os.path.isdir('dist/data'):
 
 try:
     with open('./dist/static/auto.js', 'wb') as file:
-        file.write('''// Generated automatically. Do not modify manually.
+        file.write(('''// Generated automatically. Do not modify manually.
 (()=>{
 Wiklo.title = `''' + config['name'].replace('`', '\\`') + '''`
-})()'''.encode('utf-8'))
+})()''').encode('utf-8'))
 except:
     pass
 
