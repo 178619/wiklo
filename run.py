@@ -37,6 +37,7 @@ while not config.get('port') or type(config.get('port')) != int:
     if port < 1 or port > 65535:
         print('invalid value')
         continue
+    del port
     break
 
 __WIKLO_DEBUG__ = config.get('debug', False)
@@ -46,11 +47,17 @@ with open('./config.json', 'wb') as file:
 
 print('config loaded.')
 
-if not os.path.isdir('dist'):
-    os.mkdir('dist')
-
 if not os.path.isdir('dist/data'):
     os.mkdir('dist/data')
+
+try:
+    with open('./dist/static/auto.js', 'wb') as file:
+        file.write('''// Generated automatically. Do not modify manually.
+(()=>{
+Wiklo.title = `''' + config['name'].replace('`', '\\`') + '''`
+})()'''.encode('utf-8'))
+except:
+    pass
 
 try:
     with open('./dist/metadata.json', 'rb') as file:
@@ -70,9 +77,14 @@ except FileNotFoundError:
 
 base = base.replace('<!--WIKLO.NAME-->', config['name']).replace('<!--WIKLO.DESCRIPTION-->', config['description'])
 
+
 homepage = base.replace('<!--WIKLO.CONTENTS-->', '<section></section>')
 with open('./dist/index.html', 'wb') as file:
     file.write(homepage.encode('utf-8'))
+
+versionpage = base.replace('<!--WIKLO.CONTENTS-->', '<section></section>')
+with open('./dist/version.html', 'wb') as file:
+    file.write(versionpage.encode('utf-8'))
 
 try:
     with open('./editor.html', 'r', encoding='utf-8') as file:
@@ -82,6 +94,9 @@ except FileNotFoundError:
     with open('./editor.html', 'wb') as file:
         file.write(editor.encode('utf-8'))
 editpage = base.replace('<!--WIKLO.CONTENTS-->', editor)
+del editor
+
+del base
 
 class Server(BaseHTTPRequestHandler):
     def redirect(self, location):
@@ -108,6 +123,7 @@ class Server(BaseHTTPRequestHandler):
             self.sendText(editpage, 'text/html')
             return
         try:
+            if path.startswith('/dist/'): path = path[5:]
             path = 'dist' + path
             if path.endswith('/'): path += 'index.html'
             with open(path, 'rb') as file:

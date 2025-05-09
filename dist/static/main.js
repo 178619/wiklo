@@ -89,6 +89,18 @@ Wiklo._sub = {
     '(': '₍',
     ')': '₎',
 }
+Wiklo._digital = {
+    '0': '🯰',
+    '1': '🯱',
+    '2': '🯲',
+    '3': '🯳',
+    '4': '🯴',
+    '5': '🯵',
+    '6': '🯶',
+    '7': '🯷',
+    '8': '🯸',
+    '9': '🯹'
+}
 Wiklo.toSuper = (v) => v.split('').map(k=>Wiklo._super[k]||k).join('')
 Wiklo.toSub = (v) => v.split('').map(k=>Wiklo._sub[k]||k).join('')
 Wiklo.retryImage = async (e, v) => {
@@ -137,7 +149,7 @@ Wiklo.moduleHandlers = {
         const reversed = Wiklo.getTrue(kwargs.reversed)
         const category = (kwargs.category && kwargs.category.match(/^[0-9a-f]{32}$/) ? kwargs.category : null) || (kwargs.category ? Wiklo.getPageUUIDUnsafe(decodeURIComponent(kwargs.category), [true]) : null) || kwargs.category || args.includes('category') || null
         return '<ol>'+Object.entries(metadata).filter(([uuid, {categories, old}])=>(category === null||categories.includes(category))&&!old).sort((a,b)=>{return ((a[1][sortedby] > b[1][sortedby]) - (b[1][sortedby] > a[1][sortedby])) * (reversed ? -1 : 1)}).map(([uuid, {name}])=>{
-            return `<li>[[${uuid}|${name}]]</li>`
+            return `<li>[[${uuid}|${name}|title=${name}]]</li>`
         }).join('')+'</ol>'
     },
     'nestimage': (args, kwargs) => {
@@ -539,7 +551,7 @@ Wiklo.linkToHTML = (v) => {
         if (category) categories.push(category)
     }
     const article = args[0].match(/^[0-9a-f]{32}$/) && entries.find(([k,v])=>(args[0]==k)) ||entries.find(([k,v])=>(args[0]==v.name)&&v.categories.some(t=>categories.includes(t))) || entries.find(([k,v])=>args[0]==v.name&&v.categories.includes(false)) || entries.find(([k,v])=>args[0]==v.name) || entries.find(([k,v])=>args[0].toLocaleLowerCase()==v.name.toLocaleLowerCase()) || null
-    return `<a href="./?${article ? article[0] : args[0]}${hash ? ('#'+hash) : ''}" title="${args[0]}"${!article ? ' class="no-article"' : (Wiklo.PAGEUUID == article[0] ? ' class="self-link"' : '')}>${args[1] || (hash ? (args[0] + ' &#xA7; ' + hash) : args[0])}</a>`
+    return `<a href="./?${article ? article[0] : args[0]}${hash ? ('#'+hash) : ''}" title="${kwargs.title || args[0]}"${!article ? ' class="no-article"' : (Wiklo.PAGEUUID == article[0] ? ' class="self-link"' : '')}>${args[1] || (hash ? (args[0] + ' &#xA7; ' + hash) : args[0])}</a>`
 }
 Wiklo.textToHTML = (v) => {
     return Wiklo.modulesHandler(
@@ -701,7 +713,7 @@ Wiklo.getPageUUIDUnsafe = (name, categories=[]) => {
 Wiklo.loadPageFromName = async (name, categories=[], hash) => {
     const uuid = await Wiklo.getPageUUID(decodeURIComponent(name), categories)
     if (uuid) return await Wiklo.loadUUIDPage(uuid, hash)
-    Wiklo.alert(`Page '${name}' could not be found.`, 'WARN')
+    return await Wiklo.loadArticleList(name)
 }
 Wiklo.loadHome = async () => {
     Wiklo.PAGENAME = ''
@@ -711,9 +723,21 @@ Wiklo.loadHome = async () => {
     document.querySelector('section').append(Wiklo.textToPage(Wiklo.home))
     document.title = Wiklo.title
 }
+Wiklo.loadArticleList = async (key) => {
+    Wiklo.PAGENAME = 'Search: ' + key
+    Wiklo.PAGEUUID = key
+    const metadata = await Wiklo.getMetadata()
+    const newlist = Object.entries(metadata).filter(([uuid, {name, old}])=>(!old && name.toLocaleLowerCase().includes(key.toLocaleLowerCase()))).sort((a,b)=>{return ((a[1].name > b[1].name) - (b[1].name > a[1].name))})
+    document.querySelectorAll('article').forEach(v=>{v.remove()})
+    document.querySelector('section').append(Wiklo.textToPage(
+        newlist.length ? '<ol>'+newlist.map(([uuid, {name}])=>{
+            return `<li>[[${uuid}|${name}|title=${name}]]</li>`
+        }).join('')+'</ol>' : 'No articles were found.'
+    , {name: 'Search: ' + key}))
+    return true
+}
 Wiklo.loadFromSearch = () => {
-    if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = location.search ? 'block' : 'none'
-    if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = location.search ? 'block' : 'none'
+    updateButtons()
     if (location.pathname == '/edit') {
         if (location.search && location.search.match(/^\?[0-9a-f]{32}$/)) {
             const uuid = location.search.slice(1)
@@ -740,8 +764,47 @@ Wiklo.loadFromSearch = () => {
     else if (location.search) Wiklo.loadPageFromName(decodeURIComponent(location.search.slice(1)), [], location.hash).then(()=>{document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
     else Wiklo.loadHome()
 }
+const updateButtons = (r=Wiklo.editable) => {
+    if (Wiklo.editable === undefined) Wiklo.editable = r
+    const newlink = document.querySelector('header nav a#newlink')
+    const editlink = document.querySelector('header nav a#editlink')
+    const deletelink = document.querySelector('header nav a#deletelink')
+    const versionlink = document.querySelector('header nav a#versionlink')
+    if (r || Wiklo.editable) {
+        if (!newlink || !editlink || !deletelink) return
+        editable = location.search && location.search.match(/^\?[0-9a-f]{32}$/)
+        newlink.style.display = 'block'
+        editlink.style.display = editable ? 'block' : 'none'
+        editlink.onclick = (e) => {
+            e.preventDefault()
+            location.href = editlink.href + '?' + Wiklo.PAGEUUID
+        }
+        deletelink.style.display = editable ? 'block' : 'none'
+        deletelink.onclick = (e) => {
+            e.preventDefault()
+            Wiklo.alert('Are you sure you want to delete this page? If so, click the button twice within 0.5 seconds.')
+            const deleteFuction = () => {
+                fetch('/'+Wiklo.PAGEUUID, {method: 'DELETE'}).then((r)=>{
+                    if (r.status != 204) Wiklo.alert(r.statusText, 'ERROR')
+                    else {
+                        Wiklo.alert('Page successfully deleted.')
+                        deletelink.removeEventListener('click', deleteFuction)
+                        setTimeout(()=>{location.href = '/'}, 2000)
+                    }
+                })
+            }
+            deletelink.addEventListener('click', deleteFuction)
+            setTimeout(()=>{deletelink.removeEventListener('click', deleteFuction)}, 500)
+        }
+    } else if (r === false) {
+        if (newlink) newlink.remove()
+        if (editlink) editlink.remove()
+        if (deletelink) deletelink.remove()
+    }
+}
 window.addEventListener('load', () => {
     Wiklo.getMetadata()
+    fetch('./editable', {method: 'HEAD'}).then(({status})=>{updateButtons(status==202)})
     document.querySelector('section').addEventListener('click', (e) => {
         if (e.target.nodeName == 'A' && location.pathname == '/edit') {
             e.preventDefault()
@@ -750,49 +813,12 @@ window.addEventListener('load', () => {
             e.preventDefault()
             if (e.target.classList.value.includes('self-link')) return
             if (e.target.classList.value.includes('no-article')) return Wiklo.alert(`Page '${decodeURIComponent(e.target.search.slice(1))}' does not exist.`, 'WARN')
-            if (e.target.search.match(/^\?[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(decodeURIComponent(e.target.search.slice(1)), e.target.hash).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID + e.target.hash); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
-            else Wiklo.loadPageFromName(decodeURIComponent(e.target.search.slice(1)), Wiklo.PAGEINFO?.categories || [], e.target.hash).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID + e.target.hash); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
-            if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = 'block'
-            if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = 'block'        
+            if (e.target.search.match(/^\?[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(decodeURIComponent(e.target.search.slice(1)), e.target.hash).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID + e.target.hash); updateButtons(); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
+            else Wiklo.loadPageFromName(decodeURIComponent(e.target.search.slice(1)), Wiklo.PAGEINFO?.categories || [], e.target.hash).then(()=>{window.history.pushState(null, null, './?' + Wiklo.PAGEUUID + e.target.hash); updateButtons(); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
         }
     })
     document.body.onpopstate = Wiklo.loadFromSearch
     Wiklo.loadFromSearch()
-    fetch('/editable', {method: 'HEAD'}).then(r=>{
-        const newlink = document.querySelector('header nav a#newlink')
-        const editlink = document.querySelector('header nav a#editlink')
-        const deletelink = document.querySelector('header nav a#deletelink')
-        if (r.status == 202) {
-            if (!newlink || !editlink || !deletelink) return
-            newlink.style.display = 'block'
-            editlink.style.display = location.search ? 'block' : 'none'
-            editlink.addEventListener('click', (e) => {
-                e.preventDefault()
-                location.href = editlink.href + '?' + Wiklo.PAGEUUID
-            })
-            deletelink.style.display = location.search ? 'block' : 'none'
-            deletelink.addEventListener('click', (e) => {
-                e.preventDefault()
-                Wiklo.alert('Are you sure you want to delete this page? If so, click the button twice within 0.5 seconds.')
-                const deleteFuction = () => {
-                    fetch('/'+Wiklo.PAGEUUID, {method: 'DELETE'}).then((r)=>{
-                        if (r.status != 204) Wiklo.alert(r.statusText, 'ERROR')
-                        else {
-                            Wiklo.alert('Page successfully deleted.')
-                            deletelink.removeEventListener('click', deleteFuction)
-                            setTimeout(()=>{location.href = '/'}, 2000)
-                        }
-                    })
-                }
-                deletelink.addEventListener('click', deleteFuction)
-                setTimeout(()=>{deletelink.removeEventListener('click', deleteFuction)}, 500)
-            })
-        } else {
-            if (newlink) newlink.remove()
-            if (editlink) editlink.remove()
-            if (deletelink) deletelink.remove()
-        }
-    })
     document.querySelector('#article_search').addEventListener('keydown', (e) => {
         if (e.key == 'Enter') {
             // if (document.querySelector('#article_search_list > li')) {
@@ -802,15 +828,13 @@ window.addEventListener('load', () => {
             if (e.target.value.match(/^[0-9a-f]{32}$/)) Wiklo.loadUUIDPage(e.target.value).then(()=>{
                 window.history.pushState(null, null, './?' + Wiklo.PAGEUUID)
                 document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title
-                if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = 'block'
-                if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = 'block'
+                updateButtons()
             })
             else Wiklo.loadPageFromName(decodeURIComponent(e.target.value), Wiklo.PAGEINFO?.categories || []).then((k)=>{
                 if (!k) return
                 window.history.pushState(null, null, './?' + Wiklo.PAGEUUID)
                 document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title
-                if (document.querySelector('#editlink')) document.querySelector('#editlink').style.display = 'block'
-                if (document.querySelector('#deletelink')) document.querySelector('#deletelink').style.display = 'block'
+                updateButtons()
             })
             // else return Wiklo.alert(`Page '${e.target.value}' does not exist.`, 'WARN')
         }
@@ -823,7 +847,7 @@ window.addEventListener('load', () => {
             const li = document.createElement('li')
             li.textContent = v.name
             li.addEventListener('click', ()=>{
-                Wiklo.loadUUIDPage(k).then(()=>{window.history.pushState(null, null, './?' + k); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
+                Wiklo.loadUUIDPage(k).then(()=>{window.history.pushState(null, null, './?' + k); updateButtons(); document.title = Wiklo.PAGENAME + ' - ' + Wiklo.title})
             })
             document.getElementById('article_search_list').appendChild(li)
         })
