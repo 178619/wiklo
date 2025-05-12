@@ -321,6 +321,9 @@ article {
 
     p, ul, ol {
         margin: 0.25em 0;
+        ul, ol {
+            margin: 0;
+        }
     }
 
     a {
