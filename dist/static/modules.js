@@ -214,6 +214,14 @@ const mediawiki = {
             row.appendChild(subheader2)
             tbody.appendChild(row)
         }
+        if (kwargs.image) {
+            const image = document.createElement('td')
+            image.colSpan = 2
+            image.innerHTML = kwargs.image
+            let row = document.createElement('tr')
+            row.appendChild(image)
+            tbody.appendChild(row)
+        }
         for (let i=1;i<255;i++) {
             if (kwargs['header'+i]) {
                 let header = document.createElement('th')
