@@ -16,8 +16,8 @@ Wiklo.title = 'Wiklo'
 Wiklo.home = 'Homepage'
 Wiklo._truevalues = [true, 'on', 'yes', 'true', '1', 1, 'y']
 Wiklo.getTrue = v => Wiklo._truevalues.includes(v)
-Wiklo.PAGENAME = 'PAGENAME_PLACEHOLDER'
-Wiklo.PAGEUUID = '00112233445566778899aabbccddeeff'
+Wiklo.PAGENAME = ''
+Wiklo.PAGEUUID = ''
 Object.defineProperty(Wiklo, 'PAGEINFO', {
     get: () => {
         return Wiklo.getMetadataUnsafe()[Wiklo.PAGEUUID]
@@ -203,7 +203,9 @@ Wiklo.moduleHandlers = {
         }
         if (!source) '<object data="">'
         return `<object data="${source}" width="${kwargs.width}" height="${kwargs.height}" type="${kwargs.type}"></object>`
-    }
+    },
+    'currentunixtime': () => Math.floor(new Date().valueOf() / 1000)+'',
+    'revisionunixtime': () => (Wiklo.PAGEINFO?.lastModification || 0)+''
 }
 Wiklo.tryHead = (t) => {
     // Yes, Try Head

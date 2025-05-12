@@ -50,15 +50,44 @@ const getCiteAuthors = (kwargs) => {
 }
 const hatnote = (text, kwargs) => `<div class="hatnote${kwargs.extraclasses ? (' ' + kwargs.extraclasses) : ''}">${text}</div>`
 const mediawiki = {
-    'pagename': () => Wiklo.PAGENAME,
+    'pagename': () => Wiklo.PAGENAME || '',
+    'sitename': () => Wiklo.title || '',
+    'server': () => '//' + window.location.hostname,
     'servername': () => window.location.hostname,
-    'articlepath': () => window.location.pathname + window.location.search,
+    'articlepath': () => window.location.pathname + '?$1',
     'currentyear': () => new Date().getUTCFullYear()+'',
-    'currentmonth': () => new Date().getUTCMonth()+1+'',
+    'currentmonth': () => (new Date().getUTCMonth()+1+'').padStart(2, '0'),
     'currentday': () => new Date().getUTCDate()+'',
+    'currentday2': () => (new Date().getUTCDate()+'').padStart(2, '0'),
     'currentdow': () => new Date().getUTCDay()+'',
-    'currenttime': () => new Date().getUTCHours()+':'+new Date().getUTCMinutes(),
-    'currenthour': () => new Date().getUTCHours()+'',
+    'currentdayname': () => new Date().toLocaleDateString(undefined, {weekday: 'long', timeZone: 'UTC'}),
+    'currenttime': () => (new Date().getUTCHours()+'').padStart(2, '0')+':'+(new Date().getUTCMinutes()+'').padStart(2, '0'),
+    'currenthour': () => (new Date().getUTCHours()+'').padStart(2, '0'),
+    'currenttimestamp': () => ''+new Date().getUTCFullYear()+(new Date().getUTCMonth()+1+'').padStart(2, '0')+(new Date().getUTCDate()+'').padStart(2, '0')+(new Date().getUTCHours()+'').padStart(2, '0')+(new Date().getUTCMinutes()+'').padStart(2, '0')+(new Date().getUTCSeconds()+'').padStart(2, '0'),
+    'localyear': () => new Date().getFullYear()+'',
+    'localmonth': () => (new Date().getMonth()+1+'').padStart(2, '0'),
+    'localday': () => new Date().getDate()+'',
+    'localday2': () => (new Date().getDate()+'').padStart(2, '0'),
+    'localdow': () => new Date().getDay()+'',
+    'localdayname': () => new Date().toLocaleDateString(undefined, {weekday: 'long'}),
+    'localtime': () => (new Date().getHours()+'').padStart(2, '0')+':'+(new Date().getUTCMinutes()+'').padStart(2, '0'),
+    'localhour': () => (new Date().getHours()+'').padStart(2, '0'),
+    'localtimestamp': () => ''+new Date().getFullYear()+(new Date().getMonth()+1+'').padStart(2, '0')+(new Date().getDate()+'').padStart(2, '0')+(new Date().getHours()+'').padStart(2, '0')+(new Date().getMinutes()+'').padStart(2, '0')+(new Date().getSeconds()+'').padStart(2, '0'),
+    'revisionyear': () => new Date(Wiklo.PAGEINFO?.lastModification || 0).getFullYear()+'',
+    'revisionmonth': () => (new Date(Wiklo.PAGEINFO?.lastModification || 0).getMonth()+1+'').padStart(2, '0'),
+    'revisionday': () => new Date(Wiklo.PAGEINFO?.lastModification || 0).getDate()+'',
+    'revisionday2': () => (new Date(Wiklo.PAGEINFO?.lastModification || 0).getDate()+'').padStart(2, '0'),
+    'revisiondow': () => new Date(Wiklo.PAGEINFO?.lastModification || 0).getDay()+'',
+    'revisiondayname': () => new Date(Wiklo.PAGEINFO?.lastModification || 0).toLocaleDateString(undefined, {weekday: 'long'}),
+    'revisiontime': () => (new Date(Wiklo.PAGEINFO?.lastModification || 0).getHours()+'').padStart(2, '0')+':'+(new Date(Wiklo.PAGEINFO?.lastModification || 0).getMinutes()+'').padStart(2, '0'),
+    'revisionhour': () => (new Date(Wiklo.PAGEINFO?.lastModification || 0).getHours()+'').padStart(2, '0'),
+    'revisiontimestamp': () => ''+new Date(Wiklo.PAGEINFO?.lastModification || 0).getFullYear()+(new Date(Wiklo.PAGEINFO?.lastModification || 0).getMonth()+1+'').padStart(2, '0')+(new Date(Wiklo.PAGEINFO?.lastModification || 0).getDate()+'').padStart(2, '0')+(new Date(Wiklo.PAGEINFO?.lastModification || 0).getHours()+'').padStart(2, '0')+(new Date(Wiklo.PAGEINFO?.lastModification || 0).getMinutes()+'').padStart(2, '0')+(new Date(Wiklo.PAGEINFO?.lastModification || 0).getSeconds()+'').padStart(2, '0'),
+    'revisionuser': () => Wiklo.PAGEINFO?.author || '',
+    'numberofpages': () => Object.values(Wiklo.getMetadataUnsafe()).filter(v=>!v.revised).length+'',
+    'numberofarticles': () => Object.values(Wiklo.getMetadataUnsafe()).filter(v=>!v.revised&&v.MIMEType=='text/wkl').length+'',
+    'numberoffiles': () => Object.values(Wiklo.getMetadataUnsafe()).filter(v=>!v.revised&&v.MIMEType!='text/wkl').length+'',
+    'numberofedits': () => Object.values(Wiklo.getMetadataUnsafe()).length+'',
+    'pageid': () => Wiklo.PAGEUUID || '',
     '!': () => '&#x7C;',
     '=': () => '&#x3D;',
     '!!': () => '&#x7C;&#x7C;',
@@ -239,6 +268,13 @@ const mediawiki = {
     }).join('') : '')+'</ul>',
     'redirect': (args, kwargs) => toOtherDocumentMulti('"'+args[0]+'" redirects here. ', '', args.slice(1), kwargs),
     'reflist': (args, kwargs) => '<div class="reflist"'+ (kwargs.group ? ' id="reflist-'+kwargs.group+'"' : '') +' style="column-width:' + (args[0] || '30em') + '"><ol></ol></div>',
+    'replace': (args, kwargs) => {
+        if (kwargs.count) {
+            for (let i=0; i<parseInt(kwargs.count); i++) args[0] = args[0].replace(args[1], args[2])
+            return args[0]
+        }
+        return args[0].replaceAll(args[1], args[2])
+    },
     'resize': (args, kwargs) => {
         if (args.length < 2) {
             return '<span style="font-size:90%;">'+(args[0] || '')+'</span>'
