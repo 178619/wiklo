@@ -753,7 +753,7 @@ Wiklo.loadFromSearch = () => {
                     // ----
                     loadPage()
                 })
-                metadata[uuid].categories.forEach((v)=>{
+                metadata[uuid].categories.filter(v=>v!==true&&v!==false).forEach((v)=>{
                     const {name} = metadata[v]
                     categories.push({uuid: v, name})
                 })
