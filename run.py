@@ -175,6 +175,21 @@ class Server(BaseHTTPRequestHandler):
                 del metadata[params.get('uuid')]['revisions']
             else:
                 newData['revisions'] = [params.get('uuid')]
+            if True in metadata[params.get('uuid')].get('categories', []):
+                if params.get('iscategory') == 'true':
+                    for x in metadata.keys():
+                        if params.get('uuid') in metadata[x]['categories']:
+                            metadata[x]['categories'].remove(params.get('uuid'))
+                            metadata[x]['categories'].append(uid)
+                    if params.get('uuid') in newData['categories']:
+                        newData['categories'].remove(params.get('uuid'))
+                        newData['categories'].append(uid)
+                # else:
+                #     for x in metadata.keys():
+                #         if params.get('uuid') in metadata[x]['categories']:
+                #             metadata[x]['categories'].remove(params.get('uuid'))
+                #     if params.get('uuid') in newData['categories']:
+                #         newData['categories'].remove(params.get('uuid'))
         try:
             with open(f'./{config['dir']}/data/'+uid, 'wb') as file:
                 file.write(data)
