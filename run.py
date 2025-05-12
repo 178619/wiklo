@@ -54,7 +54,7 @@ if not os.path.isdir(config['dir']+'/data'):
     os.mkdir(config['dir']+'/data')
 
 try:
-    with open(f'./{config['dir']}/static/auto.js', 'wb') as file:
+    with open(f'./{config['dir']}/auto.js', 'wb') as file:
         file.write(('''// Generated automatically. Do not modify manually.
 (()=>{
 Wiklo.title = `''' + config['name'].replace('`', '\\`') + '''`

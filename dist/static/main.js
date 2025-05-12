@@ -583,7 +583,7 @@ Wiklo.textToPage = (text, pageinfo=null) => {
             ( '<div class="page-header">'
                 + '<h1 class="page-title">'+(pageinfo.name||'')+'</h1>'
                 + '<div class="page-info">'
-                    + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
+                    // + (pageinfo.author ? '<div>Author: '+pageinfo.author+'</div>' : '')
                     // + (pageinfo.creation ? '<div>Creation: <span class="date" value='+pageinfo.creation+'>'+new Date(pageinfo.creation).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
                     + (pageinfo.lastModification ? '<div>Last Edit: <span class="date" value='+pageinfo.lastModification+'>'+new Date(pageinfo.lastModification).toLocaleString(undefined, Wiklo.timeFormat)+'</span></div>' : '')
                 + '</div>'
