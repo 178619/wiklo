@@ -560,7 +560,7 @@ Wiklo.textToHTML = (v) => {
         Wiklo.tagsHandler(v)
         .replace(/^\n/gs, '')
         .replace(/^=[^\n]*=\s*?\n/gs, (v)=>((Wiklo.tryHead(v.slice(0, -1).trim())?.outerHTML)||v.slice(0, -1))+'\n')
-        .replace(/\n=[^\n]*=\s*?\n/gs, (v)=>'\n'+((Wiklo.tryHead(v.slice(1, -1).trim())?.outerHTML)||v.slice(1, -1))+'\n')
+        .replace(/^=[^\n]*=\s*?$/gm, (v)=>((Wiklo.tryHead(v.trim())?.outerHTML)||v))
         .replace(/\n(?:\*\*\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(5).trim()+'</li>').join('')+'</ul>')
         .replace(/\n(?:\*\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(4).trim()+'</li>').join('')+'</ul>')
         .replace(/\n(?:\*\*\*+[^\n]*\n)+/gs, (v)=>'<ul>'+v.slice(1, -1).split('\n').map(k=>'<li>'+k.slice(3).trim()+'</li>').join('')+'</ul>')
